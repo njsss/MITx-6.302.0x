@@ -1,0 +1,470 @@
+<!doctype html>
+<html>
+  <head>
+    <title>6.302.0x Plotter!</title>
+    <style>
+      // * { margin: 0; padding: 0; box-sizing: border-box; }
+      body { font: 13px Helvetica, Arial; 	
+     padding: 50px;
+     margin-top:0px;
+     margin-left:30px;
+     margin-right:0px;
+     }
+    .containing-element .ui-slider-switch { width: 15em }
+    svg {
+        font: 10px sans-serif;
+    }
+    .line {
+        fill: none;
+        stroke: #F00;
+        stroke-width: 1.5px;
+    }
+    .axis path,
+    .axis line {
+        fill: none;
+        stroke: #000;
+        shape-rendering: crispEdges;
+    }
+.grid .tick {
+    stroke: lightgrey;
+    opacity: 0.7;
+}
+.grid path {
+      stroke-width: 0;
+}
+    .scaler_vp {
+        margin: 30px 0px 0px 0px
+        padding:5px;
+        width: 40px;
+        background-color:#FFFFFF; 
+        border-radius:5px;
+    }
+    .scaler_rst {
+        margin: 0px 0px 0px 0px
+        padding:5px;
+        width: 40px;
+        background-color:#FFFFFF; 
+        border-radius:5px;
+    }
+    .scaler_vm {
+        margin: 0px 0px 30px 0px
+        padding:5px;
+        width: 40px;
+        background-color:#FFFFFF; 
+        border-radius:5px;
+    }
+.button_container{
+    float: left;
+    vertical-align:middle;
+}
+
+.sub_chart_holder{
+    display: inline-block;
+}
+.chart_container {
+        position: relative;
+        font-family: Arial, Helvetica, sans-serif;
+}
+.chart {
+        position: relative;
+        left: 0px;
+}
+
+.y_axis {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 60px;
+}
+.chart {
+        vertical-align: middle;
+}
+
+</style>
+
+  <link rel="stylesheet" href="/static/jquery-ui.min.css">
+  <script src="/static/socket.io.js"></script> 
+  <script src="/static/jquery.js"></script> 
+  <script src="/static/jquery-ui.min.js"></script>
+  <script src="/static/d3.min.js"></script>  
+  <link rel="stylesheet" href="/static/bootstrap.min.css">
+  <script src="/static/bootstrap.min.js"></script>
+  <link rel="stylesheet" href="/static/jquery.mobile-1.4.5.min.css">
+  <script src="/static/jquery.mobile-1.4.5.min.js"></script>
+  </head>
+  <body>
+    <div class="col-md-1">
+    </div>
+    <div class="col-md-11">
+    <h1>6.302x Arduino Plotting and Control Environment</h1>
+    </div>
+    <div class="row">
+        <div class="col-md-1">
+        </div>
+        <div class="col-md-4">
+	        <p>Follow these steps:</p>
+	        <ul>
+	            <li>Plug in your Arduino and make sure it is sending Serial Data (with proper .ino file!)</li>
+	            <li>Start your local server (see course software page for detailed instructions.)</li>
+	            <li>Select the correct serial port and BAUD.</li>
+	            <li>Press Connect and Data should start plotting!</li>
+	        </ul>
+	    </div>
+        <div class="col-md-4">
+            <select id="serialport"></select>
+            <select id ="baud">
+                <option value=9600>9600</option>
+                <option value=14400>14400</option>
+                <option value=19200>19200</option>
+                <option value=28800>28800</option>
+                <option value=38400>38400</option>
+                <option value=57600>57600</option>
+                <option value=115200 selected>115200</option>
+            </select>
+            <button id="connect">Connect Serial</button> 
+	    </div>
+    </div>
+    <!--<div class="row">
+        <div class="col-md-1"></div>
+        <div class="col-md-4">
+	        <h2>Parameters:</h2>
+	    </div>
+    </div> -->
+    <div class="row row-centered">
+        <div class="col-md-1"></div>
+    <!--    <div class="col-md-4">
+	<label for="Kp">Kp:</label>
+	<input type="range" name="Kp" id="Kp" value="0" min="0" max="10.0" step=0.001>
+	<label for="Ki">Ki:</label>
+	<input type="range" name="Ki" id="Ki" value="0" min="0" max="10.0" step=0.001>
+	<label for="Kd">Kd:</label>
+	<input type="range" name="Kd" id="Kd" value="0" min="0" max="10.0" step=0.001>
+	</div>-->
+        <div class="col-md-4">
+	        <h3>Parameters:</h3>
+	        <label for="Direct">Direct:</label>
+	        <input type="range" name="direct" id="direct" value="0" min="0" max="255" step=1>
+	        <h3>Arduino Loop Headroom:</h3>
+	        <p id="headroom"> NOT YET CONNECTED</p> 
+        </div>
+        <div class="col-md-5">
+            <h3>Angle(degrees):</h3>
+            <div id="angle" class="chart"></div>
+        </div>
+    </div>
+	<!--<label for="desired">Desired Angle:</label>
+	<input type="range" name="desired" id="desired" value="0" min="-60" max="60" step=0.01>
+	    </div>
+        <div class="col-md-5">
+	        <div class="containing-element">
+	            <label>Arduino Loop Headroom </label>
+	            <h3 id="headroom"> NOT YET CONNECTED</h3> 
+	        </div>
+        </div>
+    </div>
+    <div class="row">
+    <div class="col-md-1">
+    </div> 
+    <div class="col-md-5">
+	<div class="containing-element">
+	  <label for="flip-min">Movement Style:</label>
+	  <select name="flip-min" id="alternating" data-role="slider">
+	    <option value=0>Fixed (Desired)</option>
+	    <option value=1>Alternating (+/- Desired)</option>
+	  </select>
+	  <label for="csv-maker">Generate CSV?:</label>
+	  <select name="csv-maker" id="csv" data-role="slider">
+	    <option value=0>OFF</option>
+	    <option value=1>ON (record CSV file)</option>
+	  </select>
+	</div>
+    </div> 
+        <div class="col-md-5">
+	        <div class="containing-element">
+	            <label>Arduino Loop Headroom </label>
+	            <h3 id="headroom"> NOT YET CONNECTED</h3> 
+	        </div>
+        </div>
+    </div>-->
+<!--
+    <div class="row">
+        <div class="col-md-1">
+        </div>
+        <div class="col-md-5">
+            <h3>Angle(degrees):</h3>
+            <div id="angle" class="chart"></div>
+        </div>
+        <div class="col-md-5">
+	        <h3>Error(degrees):</h3>
+    	    <div id="error" class="chart"></div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-1">
+        </div>
+        <div class="col-md-5">
+            <h3>Derivative:</h3>
+    	    <div id="derivative" class="chart"></div>
+        </div>
+        <div class="col-md-5">
+            <h3>Motor Command:</h3>
+    	    <div id="motor" class="chart"></div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-1">
+        </div>
+        <div class="col-md-5">
+            <h3>Integral:</h3>
+    	    <div id="integral" class="chart"></div>
+        </div>
+        <div class="col-md-5">
+            <h3>Motor Speed:</h3>
+    	    <div id="motorSpeed" class="chart"></div>
+        </div>
+    </div>
+-->
+
+
+
+<script>
+var datapoints = 100
+$(document).on('pageinit', function() {
+    //set up basic graph
+ 
+    //Angle plot:-----------------------------------------------------
+    var angle =new LWChart("#angle","red",[-100, 100],175,500,datapoints);
+    /* Not used in Lab 1 JDS
+    //Error plot:-----------------------------------------------------
+    var error =new LWChart("#error","red",[-100, 100],175,500,datapoints);
+    //Derivative plot:-----------------------------------------------------
+    var derivative =new LWChart("#derivative","red",[-400, 400],175,500,datapoints);
+    //Motor plot:-----------------------------------------------------
+    var motor = new LWChart("#motor","red",[-100, 100],175,500,datapoints);
+    //Integral plot:-----------------------------------------------------
+    var integral = new LWChart("#integral","red",[-100, 100],175,500,datapoints);
+
+    //Motor Speed plot:-----------------------------------------------------
+    var motorSpeed = new LWChart("#motorSpeed","red",[-100, 100],175,500,datapoints);
+    */
+
+    //Handle sockets with server:
+ 
+    var socket = io('http://localhost:3000');
+
+    //Server sending socket containing list of valid serial ports:
+    socket.on('serial list display', function(portlist){
+        //console.log(portlist);
+        $("#serialport").children().remove().end();
+        $.each(portlist, function (i, item) {
+            $('#serialport').append($('<option>', { 
+                value: i,
+                text : item.comName 
+            }));
+            $('#serialport option[value='+i+']').prop('selected','selected').change();
+        });
+    });
+    //Connect/Disconnect to Serial Port
+    $('#connect').click(function(){
+        if($(this).text() != 'Connected (Click to Disconnect)'){
+            socket.emit('serial connect request');
+        }else{
+            socket.emit('serial disconnect request');
+        }
+    });
+    //Update switch to connected or disconnected based on return socket from server
+    socket.on('serial connected', function(){
+        $('#connect').text('Connected (Click to Disconnect)');
+    });
+    socket.on('serial disconnected', function(){
+        console.log("oh yeah disconnecting!");
+        $('#connect').text('Disconnected (Click to Connect)');
+    });
+    
+    $('#direct').change(function(){
+	    console.log("direct changed!");
+	    socket.emit('change direct', $(this).val())
+    });
+    /* Not used in Lab 1
+    $('#Kp').change(function(){
+	    console.log("kp changed!!!");
+	    socket.emit('change Kp', $(this).val())
+    });
+    $('#Ki').change(function(){
+	    console.log("ki changed!!!");
+	    socket.emit('change Ki', $(this).val())
+    });
+    $('#Kd').change(function(){
+	    console.log("kd changed!!!");
+	    socket.emit('change Kd', $(this).val())
+    });
+    $('#desired').change(function(){
+	    console.log("desired angle changed!");
+	    socket.emit('change desired', $(this).val())
+    });
+    $('#alternating').change(function(){
+	    console.log("desired alternating state changed!");
+	    socket.emit('change state', $(this).val())
+    });
+    $('#csv').change(function(){
+        console.log("csv preference changed!");
+        socket.emit('csv state', $(this).val())
+    });
+    */
+    //update serial port upon selection: 
+    $('#serialport').change(function(){
+	console.log("serialport selected");
+        socket.emit('serial select', $('#serialport option:selected').text());
+    });
+    //upadte baud rate upon selection: 
+    $('#baud').change(function(){
+        socket.emit('baud select', $('#baud option:selected').text());
+    });
+
+    // Assumes an 12-byte pack on arduino side to reduce message size.
+    socket.on('note', function(msg) {
+        //console.log("got it");
+        //console.log(msg);
+	var errorF = false;
+        if (msg[0] != 0 || msg[11] != 255) {
+            errorF = true;
+        }else{
+            // Convert to signed integers.
+            for(var i = 1; i <= 10; i++) {
+                if (msg[i] == 0 || msg[i] == 255) errorF = true;
+	        msg[i] -= 128;
+            }
+        }
+        if (errorF) {
+            //console.log("junk data?");
+        }else{
+            // Angle and error are signed bytes.
+            var a = msg[1];
+            var e = msg[2];
+
+            // Speed and motor cmd are unsigned (offset by 1 as 0 is reserved).
+            var s = msg[3]+127;
+            var m = msg[4]+127;
+
+            // Derivative and integral are two bytes each
+            var d = msg[5]*128 + msg[6];
+            var i = msg[7]*128 + msg[8];
+
+            // Headroom is also two bytes.
+	        var h = (msg[9]*128 + msg[10]);
+            
+
+            angle.step(a);
+            // Only plot Angle in Lab 1 Version!
+            //error.step(e);
+            //integral.step(s);
+            //derivative.step(d);
+            //motor.step(i);
+            //motorSpeed.step(m);
+	        var x = document.getElementById("headroom").innerHTML;
+	        x = "more than " + h.toString() + " microseconds"
+	        document.getElementById("headroom").innerHTML = x;
+        }
+    });
+
+    $(document).on("click", ".scaler_vp",function(){
+        var parent = eval($(this).parent().parent().attr("id"));
+        console.log(angle.y_range);
+        console.log(parent);
+        var parent_range = parent.y_range[1];
+        var incr = range_adj_finder(parent_range);
+        var new_val = parent_range += incr;
+        parent.y_range =[-1*new_val,new_val]; 
+        parent.update();
+    });
+    $(document).on("click", ".scaler_vm",function(){ 
+        var parent = eval($(this).parent().parent().attr("id"));
+        var parent_range = parent.y_range[1];
+        var incr = range_adj_finder(parent_range);
+        var new_val = parent_range -= incr;
+        parent.y_range =[-1*new_val,new_val]; 
+        parent.update();
+    });
+    $(document).on("click", ".scaler_rst",function(){ 
+        var parent = eval($(this).parent().parent().attr("id"));
+        parent.y_range =parent.y_range_orig; 
+        parent.update();
+    });
+});
+
+    function LWChart(div_id,color,y_range,height,width,vals){
+        this.div_id = div_id;
+        this.id_val = Math.floor(10000*Math.random()); //unique plot identifier...all attributes carry this appended number
+        $(this.div_id).append("<div class ='button_container' id = \""+this.id_val+"BC\" style=\"float:left\">"); 
+        $("#"+this.id_val+"BC").append("<button class='scaler_vp' id=\""+this.id_val+"VP\">+</button><br>");
+        $("#"+this.id_val+"BC").append("<button class='scaler_rst' id=\""+this.id_val+"RS\">RS</button><br>");
+        $("#"+this.id_val+"BC").append("<button class='scaler_vm' id=\""+this.id_val+"VM\">-</button><br>");
+        this.color = color;
+        this.y_range_orig = y_range; //used for reset mechanisms.
+        this.y_range = y_range;
+        this.vals = vals;
+        this.margin = {top: 20, right: 30, bottom: 30, left: 40};
+        this.data = d3.range(this.vals).map(function() { return 0; });
+       
+        this.height = height - this.margin.top - this.margin.bottom;
+        this.width = width - this.margin.right - this.margin.left; 
+        
+        this.setup = function(){
+            this.chart = d3.select(this.div_id).append("svg")
+            .attr("id","svg_for_"+this.id_val).attr("width",width).attr("height",height).attr('style',"float:right");
+            this.y = d3.scale.linear().domain([this.y_range[0],this.y_range[1]]).range([this.height,0]);
+            this.x = d3.scale.linear().domain([0,this.vals-1]).range([0,this.width]);
+            this.x_axis = d3.svg.axis().scale(this.x).orient("bottom").ticks(10);
+            this.y_axis = d3.svg.axis().scale(this.y).orient("left").ticks(11);
+            this.x_grid = d3.svg.axis().scale(this.x).orient("bottom").ticks(10).tickSize(-this.height, 0, 0).tickFormat("");
+            this.y_grid = d3.svg.axis().scale(this.y).orient("left").ticks(11).tickSize(-this.width, 0, 0).tickFormat("");
+            this.chart.append("g").attr("transform","translate("+this.margin.left +","+ this.margin.top + ")");
+            this.chart.append("g").attr("class", "x axis")
+            .attr("transform","translate("+this.margin.left+","+(this.height+this.margin.top)+")").call(this.x_axis);
+            this.chart.append("g").attr("class", "y axis").attr("transform","translate("+this.margin.left+","+this.margin.top+")").call(this.y_axis); 
+            this.chart.append("g").attr("class", "grid")
+            .attr("transform","translate("+this.margin.left+","+(this.height+this.margin.top)+")").call(this.x_grid);
+            this.chart.append("g").attr("class", "grid").attr("transform","translate("+this.margin.left+","+this.margin.top+")").call(this.y_grid);
+            this.line = d3.svg.line().x(function(d, i) { return this.x(i)+this.margin.left; }.bind(this)).
+            y(function(d, i) { return this.y(d)+this.margin.top; }.bind(this));
+            this.clip_id = "clipper_"+this.id_val;
+            this.clipper = this.chart.append("clipPath").attr("id", this.clip_id)
+            .append("rect").attr("x",this.margin.left).attr("y",this.margin.top)
+            .attr("width",this.width).attr("height",this.height);
+            this.trace = this.chart.append("g").append("path").datum(this.data).attr("class","line")
+            .attr("d",this.line).attr("clip-path", "url(#"+this.clip_id+")");
+        }; 
+        this.setup();
+        this.step = function(value){
+            this.data.push(value);
+            this.trace.attr("d",this.line).attr("transform",null).transition().duration(2).ease("linear").attr("transform","translate("+this.x(-1)+",0)");
+            this.data.shift();
+        };
+        this.update = function(){
+            d3.select("#svg_for_"+this.id_val).remove();
+            this.setup();
+        };
+            
+    };
+
+    
+    var range_adj_finder = function(parent_range){
+        var incr = 0;
+        if (parent_range <=0.1){
+            incr = 0;
+        }else if (parent_range <=1){
+            incr = 0.1;
+        }else if (parent_range <=10){
+            incr = 1;
+        }else if (parent_range <=100){
+            incr = 10;
+        }else if (parent_range <= 1000){
+            incr = 100;
+        }else{
+            incr = 1000;
+        }
+        return incr;
+    }
+  </script>
+  </body>
+</html>
